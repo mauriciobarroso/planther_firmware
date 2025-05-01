@@ -1,0 +1,6 @@
+[submodule "Drivers/bh1750"]
+	path = Drivers/bh1750
+	url = git@github.com:mauriciobarroso/bh1750.git
+[submodule "Drivers/shtc3"]
+	path = Drivers/shtc3
+	url = git@github.com:mauriciobarroso/shtc3.git
