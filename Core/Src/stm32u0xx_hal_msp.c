@@ -77,8 +77,6 @@ void HAL_MspInit(void)
 
   /* System interrupt init*/
 
-  HAL_SYSCFG_EnableRemap(SYSCFG_REMAP_PA11);
-
   /* USER CODE BEGIN MspInit 1 */
 
   /* USER CODE END MspInit 1 */
@@ -231,9 +229,8 @@ void HAL_LPTIM_MspPostInit(LPTIM_HandleTypeDef* hlptim)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**LPTIM2 GPIO Configuration
     PA4     ------> LPTIM2_CH1
-    PA7     ------> LPTIM2_CH2
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_7;
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -283,15 +280,15 @@ void HAL_LPTIM_MspDeInit(LPTIM_HandleTypeDef* hlptim)
 }
 
 /**
-  * @brief TIM_Base MSP Initialization
+  * @brief TIM_PWM MSP Initialization
   * This function configures the hardware resources used in this example
-  * @param htim_base: TIM_Base handle pointer
+  * @param htim_pwm: TIM_PWM handle pointer
   * @retval None
   */
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
+void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
 {
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-  if(htim_base->Instance==TIM15)
+  if(htim_pwm->Instance==TIM15)
   {
     /* USER CODE BEGIN TIM15_MspInit 0 */
 
@@ -326,7 +323,7 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
       Error_Handler();
     }
 
-    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_CC1],hdma_tim15_ch1);
+    __HAL_LINKDMA(htim_pwm,hdma[TIM_DMA_ID_CC1],hdma_tim15_ch1);
 
     /* USER CODE BEGIN TIM15_MspInit 1 */
 
@@ -352,7 +349,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
     GPIO_InitStruct.Pin = GPIO_PIN_2;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF14_TIM15;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -363,14 +360,14 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
 
 }
 /**
-  * @brief TIM_Base MSP De-Initialization
+  * @brief TIM_PWM MSP De-Initialization
   * This function freeze the hardware resources used in this example
-  * @param htim_base: TIM_Base handle pointer
+  * @param htim_pwm: TIM_PWM handle pointer
   * @retval None
   */
-void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
+void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* htim_pwm)
 {
-  if(htim_base->Instance==TIM15)
+  if(htim_pwm->Instance==TIM15)
   {
     /* USER CODE BEGIN TIM15_MspDeInit 0 */
 
@@ -379,7 +376,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
     __HAL_RCC_TIM15_CLK_DISABLE();
 
     /* TIM15 DMA DeInit */
-    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_CC1]);
+    HAL_DMA_DeInit(htim_pwm->hdma[TIM_DMA_ID_CC1]);
     /* USER CODE BEGIN TIM15_MspDeInit 1 */
 
     /* USER CODE END TIM15_MspDeInit 1 */
@@ -405,22 +402,24 @@ void HAL_TSC_MspInit(TSC_HandleTypeDef* htsc)
     __HAL_RCC_TSC_CLK_ENABLE();
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
     /**TSC GPIO Configuration
-    PA8     ------> TSC_G7_IO1
-    PA9 [PA11]     ------> TSC_G7_IO2
+    PA6     ------> TSC_G5_IO1
+    PB0     ------> TSC_G5_IO2
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Pin = GPIO_PIN_6;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF9_TSC;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    GPIO_InitStruct.Alternate = GPIO_AF9_TSC;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /* USER CODE BEGIN TSC_MspInit 1 */
 
@@ -447,10 +446,12 @@ void HAL_TSC_MspDeInit(TSC_HandleTypeDef* htsc)
     __HAL_RCC_TSC_CLK_DISABLE();
 
     /**TSC GPIO Configuration
-    PA8     ------> TSC_G7_IO1
-    PA9 [PA11]     ------> TSC_G7_IO2
+    PA6     ------> TSC_G5_IO1
+    PB0     ------> TSC_G5_IO2
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8|GPIO_PIN_9);
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_6);
+
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_0);
 
     /* USER CODE BEGIN TSC_MspDeInit 1 */
 

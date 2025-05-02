@@ -65,10 +65,10 @@ void Error_Handler(void);
 #define LED_EN_GPIO_Port GPIOC
 #define NRST_Pin GPIO_PIN_2
 #define NRST_GPIO_Port GPIOF
-#define SEL_1_Pin GPIO_PIN_6
+#define SEL_0_Pin GPIO_PIN_8
+#define SEL_0_GPIO_Port GPIOA
+#define SEL_1_Pin GPIO_PIN_11
 #define SEL_1_GPIO_Port GPIOA
-#define SEL_0_Pin GPIO_PIN_1
-#define SEL_0_GPIO_Port GPIOB
 #define SEL_EN_Pin GPIO_PIN_12
 #define SEL_EN_GPIO_Port GPIOA
 #define BOOT0_Pin GPIO_PIN_3

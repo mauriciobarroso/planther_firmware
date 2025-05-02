@@ -102,7 +102,7 @@ typedef enum {
 /* Set the Timeout value */
 #define TIMEOUT_DEFAULT	(uint16_t)(9999) /* 10 s */
 
-#define SOIL_MOISTURE_MAX 1800
+#define SOIL_MOISTURE_MAX 3600
 #define SOIL_MOISTURE_MIN 500
 
 /* USER CODE END PD */
@@ -403,15 +403,9 @@ static void MX_LPTIM2_Init(void)
   {
     Error_Handler();
   }
-  sConfig1.Pulse = 1;
+  sConfig1.Pulse = 0;
   sConfig1.OCPolarity = LPTIM_OCPOLARITY_HIGH;
   if (HAL_LPTIM_OC_ConfigChannel(&hlptim2, &sConfig1, LPTIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfig1.Pulse = 1;
-  sConfig1.OCPolarity = LPTIM_OCPOLARITY_LOW;
-  if (HAL_LPTIM_OC_ConfigChannel(&hlptim2, &sConfig1, LPTIM_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -434,7 +428,6 @@ static void MX_TIM15_Init(void)
 
   /* USER CODE END TIM15_Init 0 */
 
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
   TIM_BreakDeadTimeConfigTypeDef sBreakDeadTimeConfig = {0};
@@ -449,15 +442,6 @@ static void MX_TIM15_Init(void)
   htim15.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim15.Init.RepetitionCounter = 0;
   htim15.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim15) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim15, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
   if (HAL_TIM_PWM_Init(&htim15) != HAL_OK)
   {
     Error_Handler();
@@ -530,8 +514,8 @@ static void MX_TSC_Init(void)
   htsc.Init.AcquisitionMode = TSC_ACQ_MODE_NORMAL;
   htsc.Init.MaxCountInterrupt = DISABLE;
   htsc.Init.ShieldIOs = 0;
-  htsc.Init.ChannelIOs = TSC_GROUP7_IO2;
-  htsc.Init.SamplingIOs = TSC_GROUP7_IO1;
+  htsc.Init.ChannelIOs = TSC_GROUP5_IO2;
+  htsc.Init.SamplingIOs = TSC_GROUP5_IO1;
   if (HAL_TSC_Init(&htsc) != HAL_OK)
   {
     Error_Handler();
@@ -636,9 +620,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SEL_EN_GPIO_Port, SEL_EN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PB9 PB0 PB4 PB5
+  /*Configure GPIO pins : PB9 PB1 PB4 PB5
                            PB6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_0|GPIO_PIN_4|GPIO_PIN_5
+  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_1|GPIO_PIN_4|GPIO_PIN_5
                           |GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -663,23 +647,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOF, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA1 PA3 PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_5;
+  /*Configure GPIO pins : PA1 PA3 PA5 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SEL_1_Pin */
-  GPIO_InitStruct.Pin = SEL_1_Pin;
+  /*Configure GPIO pins : SEL_0_Pin SEL_1_Pin */
+  GPIO_InitStruct.Pin = SEL_0_Pin|SEL_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SEL_1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SEL_0_Pin */
-  GPIO_InitStruct.Pin = SEL_0_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(SEL_0_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : SEL_EN_Pin */
   GPIO_InitStruct.Pin = SEL_EN_Pin;
@@ -738,7 +716,6 @@ static void perif_stop(void)
 	GPIO_InitStructure.Pin = GPIO_PIN_ALL;
 	GPIO_InitStructure.Pin &= ~(GPIO_PIN_2);
 	GPIO_InitStructure.Pin &= ~(GPIO_PIN_4);
-	GPIO_InitStructure.Pin &= ~(GPIO_PIN_7);
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStructure);
 
 	GPIO_InitStructure.Pin = GPIO_PIN_ALL;
@@ -810,18 +787,17 @@ static void sensors_set_thresholds(sensors_t *sensors)
 
 static uint8_t sensors_get_threshold(sensors_t *sensors)
 {
-	/* Read soil moisture sensor */
-	uint32_t soil = 0;
-	HAL_TSC_IODischarge(&htsc, ENABLE);
-	HAL_Delay(1); /* 1 ms is more than enough to discharge all capacitors */
+	uint32_t tmp = 0;
 
-	if (HAL_TSC_GroupGetStatus(&htsc, TSC_GROUP5_IDX) == TSC_GROUP_COMPLETED) {
-		for (uint8_t i = 0; i < 32; i++) {
-			soil += HAL_TSC_GroupGetValue(&htsc, TSC_GROUP5_IDX);
-		}
+	while (HAL_TSC_GetState(&htsc) == HAL_TSC_STATE_BUSY) {
 	}
 
-	uint16_t tmp = (uint16_t)(soil >>= 5);
+    __HAL_TSC_CLEAR_FLAG(&htsc, (TSC_FLAG_EOA | TSC_FLAG_MCE));
+
+
+	if (HAL_TSC_GroupGetStatus(&htsc, TSC_GROUP5_IDX) == TSC_GROUP_COMPLETED) {
+		tmp = HAL_TSC_GroupGetValue(&htsc, TSC_GROUP5_IDX);
+	}
 
 	if (tmp >= SOIL_MOISTURE_MAX) {
 		sensors->values.soil = 0;
@@ -830,10 +806,8 @@ static uint8_t sensors_get_threshold(sensors_t *sensors)
 		sensors->values.soil = 100;
 	}
 	else {
-		sensors->values.soil = (SOIL_MOISTURE_MAX - soil) * 100 / (SOIL_MOISTURE_MAX - SOIL_MOISTURE_MIN);
+		sensors->values.soil = 100 - ((tmp - SOIL_MOISTURE_MIN) * 100) / (SOIL_MOISTURE_MAX - SOIL_MOISTURE_MIN);
 	}
-
-
 
 	/* Read temperature and humidity sensor*/
 	float temp, hum;
@@ -886,7 +860,7 @@ static uint32_t sensors_process_event(sensors_t *sensors)
 	uint32_t led_time = 100;
 	uint32_t led_color = LED_COLOR_OFF;
 	uint32_t event = SENSORS_EVENT_8;
-	uint32_t timeout = 9999;
+	uint32_t timeout = 9999; /* todo: put in macros */
 	bool buzzer_en = true;
 
 	for (uint8_t i = 0; i < 8; i++) {
@@ -945,11 +919,9 @@ static void buzzer_set(bool enable)
 {
 	if (enable) {
 		HAL_LPTIM_PWM_Start(&hlptim2, LPTIM_CHANNEL_1);
-		HAL_LPTIM_PWM_Start(&hlptim2, LPTIM_CHANNEL_2);
 	}
 	else {
 		HAL_LPTIM_PWM_Stop(&hlptim2, LPTIM_CHANNEL_1);
-		HAL_LPTIM_PWM_Stop(&hlptim2, LPTIM_CHANNEL_2);
 	}
 }
 
@@ -1022,6 +994,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
+	printf("error handler...\r\n");
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1) {
